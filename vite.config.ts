@@ -5,7 +5,6 @@ import Vue from '@vitejs/plugin-vue'
 import WindiCSS from 'vite-plugin-windicss'
 import VueJsx from '@vitejs/plugin-vue-jsx'
 import { createSvgIconsPlugin } from 'vite-plugin-svg-icons'
-import EslintPlugin from 'vite-plugin-eslint'
 import { viteMockServe } from 'vite-plugin-mock'
 import progress from 'vite-plugin-progress'
 import VueI18nPlugin from '@intlify/unplugin-vue-i18n/vite'
@@ -31,11 +30,6 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
       VueJsx(),
       WindiCSS(),
       progress(),
-      EslintPlugin({
-        cache: false,
-        // 检查的文件
-        include: ['src/**/*.vue', 'src/**/*.ts', 'src/**/*.tsx']
-      }),
       VueI18nPlugin({
         runtimeOnly: true,
         compositionOnly: true,
