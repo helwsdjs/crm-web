@@ -84,3 +84,15 @@ export const IsKeyDecisionMakerList: { [key in IsKeyDecisionMaker]: EnumInfo } =
   [IsKeyDecisionMaker.YES]: { value: 0, label: '是' },
   [IsKeyDecisionMaker.NO]: { value: 1, label: '否' }
 }
+
+export enum ProductStatus {
+    INITIALIZING,
+    ONLINE,
+    OFFLINE
+}
+
+export const ProductStatusList: { [key in ProductStatus]: EnumInfo } = {
+    [ProductStatus.INITIALIZING]: { value: 0, label: '初始化' },
+    [ProductStatus.ONLINE]: { value: 1, label: '上架' },
+    [ProductStatus.OFFLINE]: { value: 2, label: '下架' }
+}

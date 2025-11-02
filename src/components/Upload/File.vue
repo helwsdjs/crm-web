@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
   <el-upload
     action="#"
     ref="upload"
@@ -21,7 +21,7 @@
 
 <script setup lang="ts" name="UploadFile">
 import { inject } from 'vue'
-import { uploadFile } from '@/api/modules/upload'
+import { uploadFile } from '@/api/modules/upload/uploadFile'
 import type { UploadProps, UploadUserFile, UploadRequestOptions } from 'element-plus'
 import { ElNotification, formContextKey, formItemContextKey } from 'element-plus'
 
@@ -65,8 +65,8 @@ const handleHttpUpload = async (options: UploadRequestOptions) => {
   let formData = new FormData()
   formData.append('file', options.file)
   try {
-    const api = props.api ?? uploadFile
-    const { data } = await api(formData)
+    const api = uploadFile
+    const { data } = await api.uploadImage(formData)
     emit('update:fileUrl', data.fileUrl)
     // 调用 el-form 内部的校验方法（可自动校验）
     formItemContext?.prop && formContext?.validateField([formItemContext.prop as string])
@@ -255,4 +255,4 @@ const uploadError = () => {
     text-align: center;
   }
 }
-</style>
+</style> -->

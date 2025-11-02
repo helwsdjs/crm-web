@@ -47,7 +47,7 @@
 <script setup lang="ts" name="UploadImgMultiple">
 import { ref, computed, inject } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
-import { uploadFile } from '@/api/modules/upload'
+import { uploadFile } from '@/api/modules/upload/uploadFile'
 import type { UploadProps, UploadFile, UploadUserFile, UploadRequestOptions } from 'element-plus'
 import { ElNotification, formContextKey, formItemContextKey } from 'element-plus'
 
@@ -119,8 +119,9 @@ const handleHttpUpload = async (options: UploadRequestOptions) => {
   let formData = new FormData()
   formData.append('file', options.file)
   try {
-    const api = props.api ?? uploadFile
-    const { data } = await api(formData)
+ const uploadApi =  uploadFile
+    // 调用多文件上传方法（类型已匹配，不会报错）
+    const { data } = await uploadApi.uploadMultiImage(formData)
     options.onSuccess(data)
   } catch (error) {
     options.onError(error as any)

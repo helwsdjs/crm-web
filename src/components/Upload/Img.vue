@@ -35,7 +35,6 @@
         <div class="upload-empty">
           <slot name="empty">
             <el-icon><Plus /></el-icon>
-            <!-- <span>请上传图片</span> -->
           </slot>
         </div>
       </template>
@@ -49,26 +48,35 @@
 
 <script setup lang="ts" name="UploadImg">
 import { ref, computed, inject } from 'vue'
-import { uploadFile } from '@/api/modules/upload'
+// 导入你的 uploadFile 对象（包含 uploadImage 方法）
+import { uploadFile } from '@/api/modules/upload/uploadFile'
 import { generateUUID } from '@/utils/util'
 import { ElNotification, formContextKey, formItemContextKey } from 'element-plus'
 import type { UploadProps, UploadRequestOptions } from 'element-plus'
+// 导入图标组件（确保已引入）
+import { Edit, ZoomIn, Delete, Plus } from '@element-plus/icons-vue'
 
+// 定义支持的文件类型
 type FileTypes = 'image/apng' | 'image/bmp' | 'image/gif' | 'image/jpeg' | 'image/pjpeg' | 'image/png' | 'image/svg+xml' | 'image/tiff' | 'image/webp' | 'image/x-icon'
 
+// 定义 props 类型：明确 api 是「包含 uploadImage 方法的对象」（与你的 uploadFile 结构一致）
 interface UploadFileProps {
-  imageUrl: string // 图片地址 ==> 必传
-  api?: (params: any) => Promise<any> // 上传图片的 api 方法，一般项目上传都是同一个 api 方法，在组件里直接引入即可 ==> 非必传
-  drag?: boolean // 是否支持拖拽上传 ==> 非必传（默认为 true）
-  disabled?: boolean // 是否禁用上传组件 ==> 非必传（默认为 false）
-  fileSize?: number // 图片大小限制 ==> 非必传（默认为 5M）
-  fileType?: FileTypes[] // 图片类型限制 ==> 非必传（默认为 ["image/jpeg", "image/png", "image/gif"]）
-  height?: string // 组件高度 ==> 非必传（默认为 150px）
-  width?: string // 组件宽度 ==> 非必传（默认为 150px）
-  borderRadius?: string // 组件边框圆角 ==> 非必传（默认为 8px）
+  imageUrl: string // 图片地址（必传）
+  // api 可选，格式与 uploadFile 一致（包含 uploadImage 方法）
+  api?: {
+    uploadImage: (params: FormData) => Promise<any>
+    uploadMultiImage?: (params: FormData) => Promise<any>
+  }
+  drag?: boolean // 是否支持拖拽（默认 true）
+  disabled?: boolean // 是否禁用（默认 false）
+  fileSize?: number // 图片大小限制（默认 5M）
+  fileType?: FileTypes[] // 图片类型限制（默认 jpeg/png/gif）
+  height?: string // 组件高度（默认 150px）
+  width?: string // 组件宽度（默认 150px）
+  borderRadius?: string // 边框圆角（默认 8px）
 }
 
-// 接受父组件参数
+// 接受父组件参数并设置默认值
 const props = withDefaults(defineProps<UploadFileProps>(), {
   imageUrl: '',
   drag: true,
@@ -82,80 +90,94 @@ const props = withDefaults(defineProps<UploadFileProps>(), {
 
 // 生成组件唯一id
 const uuid = ref('id-' + generateUUID())
-
-// 查看图片
+// 查看图片弹窗状态
 const imgViewVisible = ref(false)
-// 获取 el-form 组件上下文
+// 获取 el-form 上下文（用于表单校验）
 const formContext = inject(formContextKey, void 0)
-// 获取 el-form-item 组件上下文
+// 获取 el-form-item 上下文（用于表单校验）
 const formItemContext = inject(formItemContextKey, void 0)
+
 // 判断是否禁用上传和删除
 const self_disabled = computed(() => {
   return props.disabled || formContext?.disabled
 })
 
-/**
- * @description 图片上传
- * @param options 上传的文件
- * */
+// 定义 emits 类型
 interface UploadEmits {
   (e: 'update:imageUrl', value: string): void
   (e: 'check-validate'): void
 }
 const emit = defineEmits<UploadEmits>()
+
+/**
+ * 图片上传逻辑（核心修改：适配 uploadFile 对象的调用方式）
+ */
 const handleHttpUpload = async (options: UploadRequestOptions) => {
-  let formData = new FormData()
+  const formData = new FormData()
   formData.append('file', options.file)
+
   try {
-    const api = props.api ?? uploadFile
-    const { data } = await api(formData)
+    // 优先使用父组件传入的 api，默认使用 uploadFile 对象的 uploadImage 方法
+    const uploadApi = props.api ?? uploadFile
+    // 调用对象中的 uploadImage 方法（与你的 uploadFile 结构匹配）
+    const { data } = await uploadApi.uploadImage(formData)
+
+    // 上传成功：更新图片地址 + 触发表单校验
     emit('update:imageUrl', data.fileUrl)
-    // 调用 el-form 内部的校验方法（可自动校验）
-    formItemContext?.prop && formContext?.validateField([formItemContext.prop as string])
+    if (formItemContext?.prop && formContext) {
+      formContext.validateField([formItemContext.prop as string])
+    }
     emit('check-validate')
+
   } catch (error) {
+    // 上传失败：触发错误回调
     options.onError(error as any)
   }
 }
 
 /**
- * @description 删除图片
- * */
+ * 删除图片（清空图片地址）
+ */
 const deleteImg = () => {
   emit('update:imageUrl', '')
 }
 
 /**
- * @description 编辑图片
- * */
+ * 编辑图片（触发上传按钮点击）
+ */
 const editImg = () => {
-  const dom = document.querySelector(`#${uuid.value} .el-upload__input`)
-  dom && dom.dispatchEvent(new MouseEvent('click'))
+  const uploadInput = document.querySelector(`#${uuid.value} .el-upload__input`)
+  uploadInput && uploadInput.dispatchEvent(new MouseEvent('click'))
 }
 
 /**
- * @description 文件上传之前判断
- * @param rawFile 上传的文件
- * */
+ * 上传前校验（文件类型 + 大小）
+ */
 const beforeUpload: UploadProps['beforeUpload'] = (rawFile) => {
-  const imgSize = rawFile.size / 1024 / 1024 < props.fileSize
-  const imgType = props.fileType
-  if (!imgType.includes(rawFile.type as FileTypes))
+  // 校验文件类型
+  const isTypeValid = props.fileType.includes(rawFile.type as FileTypes)
+  if (!isTypeValid) {
     ElNotification({
       title: '温馨提示',
-      message: '上传图片不符合所需的格式！',
+      message: '上传图片不符合所需格式（仅支持 jpeg/png/gif）！',
       type: 'warning'
     })
-  if (!imgSize)
+  }
+
+  // 校验文件大小（转换为 MB）
+  const isSizeValid = rawFile.size / 1024 / 1024 < props.fileSize
+  if (!isSizeValid) {
     ElNotification({
       title: '温馨提示',
       message: `上传图片大小不能超过 ${props.fileSize}M！`,
       type: 'warning'
     })
-  return imgType.includes(rawFile.type as FileTypes) && imgSize
+  }
+
+  return isTypeValid && isSizeValid
 }
 
-// 图片上传成功提示
+// 上传成功提示
 const uploadSuccess = () => {
   ElNotification({
     title: '温馨提示',
@@ -164,7 +186,7 @@ const uploadSuccess = () => {
   })
 }
 
-// 图片上传错误提示
+// 上传失败提示
 const uploadError = () => {
   ElNotification({
     title: '温馨提示',
@@ -173,7 +195,9 @@ const uploadError = () => {
   })
 }
 </script>
+
 <style scoped lang="less">
+/* 保持你原有的样式不变 */
 .is-error {
   .upload {
     :deep(.el-upload),
