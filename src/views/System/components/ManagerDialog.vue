@@ -34,7 +34,13 @@
             <el-option v-for="item in dialogProps.roleList" :key="item.Id" :label="item.name" :value="item.id" class="isabel-option" />
           </el-select>
         </el-form-item>
-                <el-form-item v-if="dialogProps.title !== '重置'" label="所属部门" prop="departId">
+        <el-form-item v-if="dialogProps.title !== '重置'" label="状态" prop="status">
+          <el-radio-group v-model="dialogProps.row!.status">
+            <el-radio :label="1" border>正常</el-radio>
+            <el-radio :label="0" border>停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item v-if="dialogProps.title !== '重置'" label="所属部门" prop="departId">
           <el-cascader
             v-model="dialogProps.row!.departId"
             :props="{ value: 'id', label: 'name', emitPath: false, checkStrictly: true }"
@@ -43,12 +49,6 @@
             :show-all-levels="false"
             filterable
           />
-        </el-form-item>
-        <el-form-item v-if="dialogProps.title !== '重置'" label="状态" prop="status">
-          <el-radio-group v-model="dialogProps.row!.status">
-            <el-radio :label="1" border>正常</el-radio>
-            <el-radio :label="0" border>停用</el-radio>
-          </el-radio-group>
         </el-form-item>
       </el-form>
     </div>
@@ -89,7 +89,7 @@ const dialogProps = ref<DialogProps>({
   title: '',
   row: { status: 1, type: 0 },
   labelWidth: 160,
-  fullscreen: true,
+  fullscreen: false,
   maxHeight: '500px'
 })
 

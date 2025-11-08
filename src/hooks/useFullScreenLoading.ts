@@ -6,7 +6,7 @@ export const useFullScreenLoading = () => {
 
   const startLoading = () => {
     loadingInstance = ElLoading.service({
-      fullscreen: true,
+      fullscreen: false,
       lock: true,
       text: 'Loading',
       background: 'rgba(0, 0, 0, 0.7)'

@@ -6,21 +6,20 @@
       rowKey="id"
       :columns="columns"
       :requestApi="DepartmentApi.page"
-      :initParam="initParam"
       :dataCallback="dataCallback"
+      :initParam="initParam"
       :searchCol="{ xs: 2, sm: 3, md: 4, lg: 6, xl: 8 }"
     >
-      <!-- 表格 header 按钮 -->
       <template #tableHeader>
         <el-button type="primary" :icon="CirclePlus" v-hasPermi="['sys:department:add']" @click="openDrawer('新增')">新增部门</el-button>
       </template>
-      <!-- 表格操作 -->
+
       <template #operation="scope">
         <el-button type="primary" link :icon="EditPen" v-hasPermi="['sys:department:edit']" @click="openDrawer('编辑', scope.row)">编辑</el-button>
         <el-button type="danger" link :icon="Delete" v-hasPermi="['sys:department:remove']" @click="deleteDepartment(scope.row)">删除</el-button>
       </template>
     </ProTable>
-      <DepartmentDialog ref="dialogRef" />
+    <DepartmentDialog ref="dialogRef" />
   </div>
 </template>
 <script setup lang="ts" name="DepartmentManager">
@@ -28,12 +27,18 @@ import { ref, reactive } from 'vue'
 import { ColumnProps } from '@/components/ProTable/interface'
 import ProTable from '@/components/ProTable/index.vue'
 import { DepartmentApi } from '@/api/modules/department'
-import { CirclePlus, EditPen, Delete } from '@element-plus/icons-vue'
+import { CirclePlus, EditPen } from '@element-plus/icons-vue'
+import { useDepartmentStore } from '@/store/modules/department'
 import { useHandleData } from '@/hooks/useHandleData'
-import DepartmentDialog from '@/components/DepartmentDialog.vue'
+import { Delete } from '@element-plus/icons-vue'
+import { SysManager } from '@/api/interface'
+import DepartmentDialog from '@/views/System/components/DepartmentDialog.vue'
+
+const departmentStore = useDepartmentStore()
 
 // 获取 ProTable 元素，调用其获取刷新数据方法（还能获取到当前查询参数，方便导出携带参数）
 const proTable = ref()
+const dialogRef = ref()
 
 // 如果表格需要初始化请求参数，直接定义传给 ProTable(之后每次请求都会自动带上该参数，此参数更改之后也会一直带上，改变此参数会自动刷新表格数据)
 const initParam = reactive({})
@@ -47,12 +52,19 @@ const dataCallback = (data: any) => {
 }
 
 // 表格配置项
-const columns: ColumnProps[] = [
+const columns: ColumnProps<SysManager.ResManagerList>[] = [
   { type: 'selection', fixed: 'left', width: 60 },
   {
     prop: 'name',
     label: '部门名称',
     search: { el: 'input' }
+  },
+  {
+    prop: 'departId',
+    label: '所属部门',
+    enum: departmentStore.departmentList,
+    fieldNames: { label: 'name', value: 'id' },
+    search: { el: 'cascader', span: 2, props: { props: { checkStrictly: true }, filterable: true } }
   },
   {
     prop: 'level',
@@ -65,8 +77,12 @@ const columns: ColumnProps[] = [
   },
   { prop: 'operation', label: '操作', fixed: 'right', width: 330 }
 ]
-const dialogRef = ref()
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
+
+const deleteDepartment = async (params: any) => {
+  await useHandleData(DepartmentApi.remove, { id: params.id }, `删除【${params.name}】`)
+  proTable.value.getTableList()
+}
+
 const openDrawer = (title: string, row: Partial<any> = {}) => {
   let params = {
     title,
@@ -77,9 +93,5 @@ const openDrawer = (title: string, row: Partial<any> = {}) => {
     maxHeight: '300px'
   }
   dialogRef.value.acceptParams(params)
-}
-const deleteDepartment = async (params: any) => {
-  await useHandleData(DepartmentApi.remove, { id: params.id }, `删除【${params.name}】`)
-  proTable.value.getTableList()
 }
 </script>
